@@ -136,9 +136,16 @@ char  *niji_data_filnename = "niji.dat";
 
 
 unsigned int disp_color_code[] = {
-    0xff0000, 0x00ff00, 0x0000ff, 0xffff00,
+    0xff0000, 0x00ff00, 0x1010ff, 0xffff00,
     0x00ffff, 0xff00ff, 0xffffff, 0x000000
 };
+
+unsigned int  disp_rct_color_code = 0x3f0303;
+unsigned int  disp_arw_color_code = 0x107f00;
+unsigned int  disp_que_color_code = 0x00ffff;
+unsigned int  disp_ans_color_code = 0xffffff;
+unsigned int  disp_sec_color_code = 0x0000ff;
+unsigned int  disp_rem_color_code = 0x003f3f;
 
 int  yoji_clear_hor_pat[][DEF_YOJI_MOJI] = {
     {  0,  1,  2,  3 },
@@ -444,6 +451,28 @@ void view_anser_rect( unsigned int color )
 }
 
 
+void view_sec_counter( void )
+{
+    int  num;
+    unsigned char  col10, col1;
+
+    num = x_sec_init;
+
+    memset( sec_buffer, 0x00, sizeof(sec_buffer) );
+    col10 = (unsigned char)(num / 10);
+    col1  = (unsigned char)(num % 10);
+    make_ascii_bitmap( col10+'0', (unsigned char *)sec_buffer[0] );
+    make_ascii_bitmap( col1+'0',  (unsigned char *)sec_buffer[1] );
+
+    clr_ank_img_buf( DEF_SEC_COL10_X, DEF_SEC_COL10_Y );
+    clr_ank_img_buf( DEF_SEC_COL1_X,  DEF_SEC_COL1_Y );
+    if( col10 != 0 ) {
+        set_ank_to_img_buf( DEF_SEC_COL10_X, DEF_SEC_COL10_Y, (unsigned char *)sec_buffer[0], disp_sec_color_code );
+    }
+    set_ank_to_img_buf( DEF_SEC_COL1_X, DEF_SEC_COL1_Y, (unsigned char *)sec_buffer[1], disp_sec_color_code );
+}
+
+
 void view_remain_counter( void )
 {
     int  num;
@@ -460,9 +489,9 @@ void view_remain_counter( void )
     clr_ank_img_buf( DEF_REM_COL10_X, DEF_REM_COL10_Y );
     clr_ank_img_buf( DEF_REM_COL1_X,  DEF_REM_COL1_Y );
     if( col10 != 0 ) {
-        set_ank_to_img_buf( DEF_REM_COL10_X, DEF_REM_COL10_Y, (unsigned char *)rem_buffer[0], disp_color_code[4] );
+        set_ank_to_img_buf( DEF_REM_COL10_X, DEF_REM_COL10_Y, (unsigned char *)rem_buffer[0], disp_rem_color_code );
     }
-    set_ank_to_img_buf( DEF_REM_COL1_X, DEF_REM_COL1_Y, (unsigned char *)rem_buffer[1], disp_color_code[4] );
+    set_ank_to_img_buf( DEF_REM_COL1_X, DEF_REM_COL1_Y, (unsigned char *)rem_buffer[1], disp_rem_color_code );
 }
 
 
@@ -832,11 +861,13 @@ void  task_niji( __unused void *params )
     memset( image_buffer, 0x00, sizeof(image_buffer) );
 
     /* disp allow */
-    set_font_to_img_buf_quick( 16, 24, (unsigned char *)kigou_right, disp_color_code[1] );
-    set_font_to_img_buf_quick( 24, 16, (unsigned char *)kigou_down,  disp_color_code[1] );
-    set_font_to_img_buf_quick( 24, 40, (unsigned char *)kigou_down,  disp_color_code[1] );
-    set_font_to_img_buf_quick( 40, 24, (unsigned char *)kigou_right, disp_color_code[1] );
+    set_font_to_img_buf_quick( 16, 24, (unsigned char *)kigou_right, disp_arw_color_code );
+    set_font_to_img_buf_quick( 24, 16, (unsigned char *)kigou_down,  disp_arw_color_code );
+    set_font_to_img_buf_quick( 24, 40, (unsigned char *)kigou_down,  disp_arw_color_code );
+    set_font_to_img_buf_quick( 40, 24, (unsigned char *)kigou_right, disp_arw_color_code );
     view_anser_rect( disp_color_code[0] );
+
+    view_sec_counter();
 
     color = 0;
     niji_pnt = (unsigned char  *)niji_data_pnt;
@@ -911,7 +942,7 @@ void  task_niji( __unused void *params )
 
         memset( tmp_buffer, 0x00, sizeof(tmp_buffer) );
         make_kanji_bitmap( kigou_quest, (unsigned char  *)tmp_buffer );
-        set_font_to_img_buf( 24, 24, (unsigned char *)tmp_buffer, disp_color_code[4] );
+        set_font_to_img_buf( 24, 24, (unsigned char *)tmp_buffer, disp_que_color_code );
 
         x_handle_counter = 50 ; /* cyclic = 20msec */
         x_sec_remain = x_sec_init;
@@ -931,7 +962,7 @@ void  task_niji( __unused void *params )
         memset( tmp_buffer, 0x00, sizeof(tmp_buffer) );
         clr_img_buf( 24, 24 );
         make_kanji_bitmap( niji_ans, (unsigned char  *)tmp_buffer );
-        set_font_to_img_buf( 24, 24, (unsigned char *)tmp_buffer, disp_color_code[6] );
+        set_font_to_img_buf( 24, 24, (unsigned char *)tmp_buffer, disp_ans_color_code );
 
         vTaskDelay( DEF_TIM_ANS_DISP );
 
@@ -1062,18 +1093,7 @@ void cyclic_handler( __unused void *params )
     }
 
     if( bak_sec != x_sec_init ) {
-        memset( sec_buffer, 0x00, sizeof(sec_buffer) );
-        col10 = (unsigned char)(x_sec_init / 10);
-        col1  = (unsigned char)(x_sec_init % 10);
-        make_ascii_bitmap( col10+'0', (unsigned char *)sec_buffer[0] );
-        make_ascii_bitmap( col1+'0',  (unsigned char *)sec_buffer[1] );
-
-        clr_ank_img_buf( DEF_SEC_COL10_X, DEF_SEC_COL10_Y );
-        clr_ank_img_buf( DEF_SEC_COL1_X,  DEF_SEC_COL1_Y );
-        if( col10 != 0 ) {
-            set_ank_to_img_buf( DEF_SEC_COL10_X, DEF_SEC_COL10_Y, (unsigned char *)sec_buffer[0], disp_color_code[2] );
-        }
-        set_ank_to_img_buf( DEF_SEC_COL1_X, DEF_SEC_COL1_Y, (unsigned char *)sec_buffer[1], disp_color_code[2] );
+        view_sec_counter();
     }
   }
 }
