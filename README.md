@@ -1,3 +1,4 @@
+```
 ./
  |____ FreeRTOS-Kernel
  |      git clone https://github.com/raspberrypi/FreeRTOS-Kernel.git
@@ -6,7 +7,7 @@
  |      git clone https://github.com/raspberrypi/pico-sdk
  |
  |____ pico-freertos4
-
+```
 
 cd pico-freertos4
 mkdir build
