@@ -82,31 +82,29 @@ int hub75_test_init() {
 }
 
 int hub75_test_loop() {
-    //while (1) {
-        for (int rowsel = 0; rowsel < (1 << ROWSEL_N_PINS); ++rowsel) {
-            for (int x = 0; x < WIDTH; ++x) {
-                gc_row[0][x] = gamma_correct_888_888(&img888[(rowsel * WIDTH + x)*DEF_IMG_PIXEL]);
-                gc_row[1][x] = gamma_correct_888_888(&img888[(((1u << ROWSEL_N_PINS) + rowsel) * WIDTH + x)*DEF_IMG_PIXEL]);
-            }
-            for (int bit = 0; bit < 8; ++bit) {
-                hub75_data_rgb888_set_shift(pio, sm_data, data_prog_offs, bit);
-                for (int x = 0; x < WIDTH; ++x) {
-                    pio_sm_put_blocking(pio, sm_data, gc_row[0][x]);
-                    pio_sm_put_blocking(pio, sm_data, gc_row[1][x]);
-                }
-                // Dummy pixel per lane
-                pio_sm_put_blocking(pio, sm_data, 0);
-                pio_sm_put_blocking(pio, sm_data, 0);
-                // SM is finished when it stalls on empty TX FIFO
-                hub75_wait_tx_stall(pio, sm_data);
-                // Also check that previous OEn pulse is finished, else things can get out of sequence
-                hub75_wait_tx_stall(pio, sm_row);
-
-                // Latch row data, pulse output enable for new row.
-                pio_sm_put_blocking(pio, sm_row, rowsel | (100u * (1u << bit) << 5));
-            }
+    for (int rowsel = 0; rowsel < (1 << ROWSEL_N_PINS); ++rowsel) {
+        for (int x = 0; x < WIDTH; ++x) {
+            gc_row[0][x] = gamma_correct_888_888(&img888[(rowsel * WIDTH + x)*DEF_IMG_PIXEL]);
+            gc_row[1][x] = gamma_correct_888_888(&img888[(((1u << ROWSEL_N_PINS) + rowsel) * WIDTH + x)*DEF_IMG_PIXEL]);
         }
-    //}
+        for (int bit = 0; bit < 8; ++bit) {
+            hub75_data_rgb888_set_shift(pio, sm_data, data_prog_offs, bit);
+            for (int x = 0; x < WIDTH; ++x) {
+                pio_sm_put_blocking(pio, sm_data, gc_row[0][x]);
+                pio_sm_put_blocking(pio, sm_data, gc_row[1][x]);
+            }
+            // Dummy pixel per lane
+            pio_sm_put_blocking(pio, sm_data, 0);
+            pio_sm_put_blocking(pio, sm_data, 0);
+            // SM is finished when it stalls on empty TX FIFO
+            hub75_wait_tx_stall(pio, sm_data);
+            // Also check that previous OEn pulse is finished, else things can get out of sequence
+            hub75_wait_tx_stall(pio, sm_row);
+
+            // Latch row data, pulse output enable for new row.
+            pio_sm_put_blocking(pio, sm_row, rowsel | (100u * (1u << bit) << 5));
+        }
+    }
 
     yoji_adc4 = (unsigned int)adc_read();
 
